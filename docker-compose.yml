@@ -1,0 +1,54 @@
+version: '3.0'
+services:
+    api:
+        image: fontenele/nginx-php-fpm-py
+        container_name: laravel_api
+        tty: true
+        stdin_open: true
+        entrypoint: ./.docker/entrypoint.sh
+        volumes:
+            - ./:/var/www/html
+            - ./.docker/sites-enabled:/etc/nginx/sites-enabled
+        ports:
+            - 80
+            - 443
+        networks:
+            laravel_network:
+                ipv4_address: '172.30.128.35'
+        depends_on:
+            - api_db
+    api_db:
+        image: mdillon/postgis
+        container_name: postgis_db
+        tty: true
+        stdin_open: true
+        networks:
+            laravel_network:
+                ipv4_address: '172.30.128.65'
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        ports:
+            - 5991:5432
+        env_file:
+            - .db.env
+    api_cache:
+        image: redis
+        container_name: laravel_cache
+        command: ["redis-server", "--appendonly", "yes", "--requirepass", "123456"]
+        tty: true
+        stdin_open: true
+        volumes:
+            - redisdata:/data
+        networks:
+            laravel_network:
+                ipv4_address: '172.30.128.75'
+volumes:
+    pgdata:
+    redisdata:
+networks:
+    laravel_network:
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+                -   subnet: "172.30.0.0/16"
